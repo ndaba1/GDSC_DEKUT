@@ -68,7 +68,7 @@ class _PersonaState extends State<Persona> {
                   Components.spacerWidth(20),
                   InkWell(
                       onTap: () async {
-                        await Components.imageDialog(context);
+                        await Components.controller.getImage();
 
                         await Components.uploadFileDetails(
                             controller.image.value);
@@ -131,7 +131,7 @@ class _PersonaState extends State<Persona> {
                       ? Constants.announceLogo
                       : urlDetails!,
                 }).then((value) async {
-                  Components.showMessage("Data Updated successfully");
+                  Components.createScaffoldMessanger("Data Updated successfully", context);
                   controller.getTechology();
                   controller.getProfileImage();
                   controller.getProfileDetails();

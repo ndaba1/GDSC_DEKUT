@@ -1,19 +1,15 @@
 // ignore_for_file: file_names, prefer_const_constructors, must_be_immutable, avoid_print, use_build_context_synchronously, deprecated_member_use
-
 import 'dart:io';
-
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gdsc_app/Controller/app_controller.dart';
@@ -22,14 +18,14 @@ import 'package:gdsc_app/Firebase_Logic/UserFirebase.dart';
 import 'package:gdsc_app/UI/Events/UI/Events.dart';
 import 'package:gdsc_app/UI/Notification/pushNotification.dart';
 import 'package:gdsc_app/UI/Profile/Pages/Admins/Admins.dart';
-
+import 'package:gdsc_app/UI/Profile/Pages/FeedBack/Model/feedback.dart';
 import 'package:gdsc_app/UI/Profile/Pages/Post/Post.dart';
+import 'package:gdsc_app/UI/Resources/Model/resources_model.dart';
 import 'package:gdsc_app/Util/App_Constants.dart';
 import 'package:gdsc_app/Util/dimensions.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import '../main.dart';
@@ -101,6 +97,7 @@ class Components {
   static var myGroup = AutoSizeGroup();
   static double sizeHeight = Get.mediaQuery.size.height;
   static double sizeWidth = Get.mediaQuery.size.width;
+  static String now = DateFormat.yMMMd().format(DateTime.now());
 
   static Widget header_1(String text) {
     return AutoSizeText(
@@ -688,6 +685,7 @@ class Components {
               }
               final docs = snapshot.data?.docs;
               return ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
                 separatorBuilder: (context, index) {
                   return spacerHeight(10);
                 },
@@ -698,6 +696,15 @@ class Components {
                       docs[index].data() as Map<String, dynamic>;
 
                   return ListTile(
+                    onTap: () {
+                      nameLead.text = data['name'];
+                      roleLead.text = data['role'];
+                      emailLead.text = data['email'];
+                      phoneLead.text = data['phone'];
+                      urlLead = data['imageUrl'];
+                      Components.adminLeadBottomSheet(
+                          docs[index].id, urlLead!, context);
+                    },
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(100),
                       child: CachedNetworkImage(
@@ -944,6 +951,7 @@ class Components {
               }
               final docs = snapshot.data?.docs;
               return ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
                 separatorBuilder: (context, index) {
                   return spacerHeight(10);
                 },
@@ -954,6 +962,14 @@ class Components {
                       docs[index].data() as Map<String, dynamic>;
 
                   return ListTile(
+                    onTap: () {
+                      titleResource.text = data['title'];
+                      descriptionResource.text = data['description'];
+                      linkResource.text = data['link'];
+                      urlResource = data['imageUrl'];
+                      Components.adminResourcesBottomSheet(
+                          docs[index].id, urlResource!, context);
+                    },
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(100),
                       child: CachedNetworkImage(
@@ -978,11 +994,11 @@ class Components {
                             : Colors.black87,
                       ),
                     ),
-                    subtitle: Text(data['description'],
-                        style: TextStyle(
-                            color: controller.isDark.value
-                                ? Colors.white
-                                : Colors.black87)),
+                    // subtitle: Text(data['description'],
+                    //     style: TextStyle(
+                    //         color: controller.isDark.value
+                    //             ? Colors.white
+                    //             : Colors.black87)),
                     trailing: InkWell(
                       onTap: () {
                         titleResource.text = data['title'];
@@ -1185,6 +1201,115 @@ class Components {
       }),
     );
   }
+    static Widget adminNewsListCard(BuildContext context) {
+    final Stream<QuerySnapshot> detailStream =
+        FirebaseFirestore.instance.collection('news').snapshots();
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 2,
+      height: MediaQuery.of(context).size.height,
+      child: Obx(() {
+        return Visibility(
+          visible: controller.isLoading.value,
+          replacement: StreamBuilder<QuerySnapshot>(
+            stream: detailStream,
+            builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+              if (snapshot.hasError) {
+                return Text('Error: ${snapshot.error}');
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                print("loading");
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: const CircularProgressIndicator(),
+                  ),
+                );
+              }
+              final docs = snapshot.data?.docs;
+              return ListView.separated(
+                separatorBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: spacerHeight(2),
+                  );
+                },
+                physics: const AlwaysScrollableScrollPhysics(),
+                shrinkWrap: false,
+                itemCount: docs!.length,
+                itemBuilder: (context, int index) {
+                  Map<String, dynamic> data =
+                      docs[index].data() as Map<String, dynamic>;
+
+                  return ListTile(
+                    onTap: () {
+                      titleAnnouncement.text = data['title'];
+                      descriptionAnnouncement.text = data['description'];
+                      linkAnnouncement.text = data['link'];
+                      urlAnnouncement = data['imageUrl'];
+                      Components.adminNewsBottomSheet(
+                          docs[index].id, urlAnnouncement!, context);
+                    },
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: CachedNetworkImage(
+                        height: 50,
+                        width: 50,
+                        fit: BoxFit.cover,
+                        imageUrl: data['imageUrl'] ?? Constants.announceLogo,
+                        progressIndicatorBuilder:
+                            (context, url, downloadProgress) =>
+                                CircularProgressIndicator(
+                                    strokeWidth: 1,
+                                    value: downloadProgress.progress),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error),
+                      ),
+                    ),
+                    title: Text(
+                      data['title'],
+                      style: TextStyle(
+                        color: controller.isDark.value
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
+                    ),
+                    // subtitle: Text(data['description'],
+                    //     style: TextStyle(
+                    //         color: controller.isDark.value
+                    //             ? Colors.white
+                    //             : Colors.black87)),
+                    trailing: InkWell(
+                      onTap: () {
+                        titleAnnouncement.text = data['title'];
+                        descriptionAnnouncement.text = data['description'];
+                        linkAnnouncement.text = data['link'];
+                        urlAnnouncement = data['imageUrl'];
+                        Components.adminAnnouncementBottomSheet(
+                            docs[index].id, urlAnnouncement!, context);
+                      },
+                      child: Icon(
+                        Icons.edit,
+                        size: 18,
+                        color: controller.isDark.value
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: const CircularProgressIndicator(),
+            ),
+          ),
+        );
+      }),
+    );
+  }
 
   static Widget adminAnnouncementListCard(BuildContext context) {
     final Stream<QuerySnapshot> detailStream =
@@ -1210,15 +1335,30 @@ class Components {
                   ),
                 );
               }
-              final docs = snapshot.data?.docs;
-              return ListView.builder(
-                shrinkWrap: true,
-                itemCount: docs?.length,
+              final docs = snapshot.data!.docs;
+              return ListView.separated(
+                separatorBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: spacerHeight(2),
+                  );
+                },
+                physics: const AlwaysScrollableScrollPhysics(),
+                shrinkWrap: false,
+                itemCount: docs.length,
                 itemBuilder: (context, int index) {
                   Map<String, dynamic> data =
-                      docs![index].data() as Map<String, dynamic>;
+                      docs[index].data() as Map<String, dynamic>;
 
                   return ListTile(
+                    onTap: () {
+                      titleAnnouncement.text = data['title'];
+                      descriptionAnnouncement.text = data['description'];
+                      linkAnnouncement.text = data['link'];
+                      urlAnnouncement = data['imageUrl'];
+                      Components.adminAnnouncementBottomSheet(
+                          docs[index].id, urlAnnouncement!, context);
+                    },
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(100),
                       child: CachedNetworkImage(
@@ -1243,11 +1383,11 @@ class Components {
                             : Colors.black87,
                       ),
                     ),
-                    subtitle: Text(data['description'],
-                        style: TextStyle(
-                            color: controller.isDark.value
-                                ? Colors.white
-                                : Colors.black87)),
+                    // subtitle: Text(data['description'],
+                    //     style: TextStyle(
+                    //         color: controller.isDark.value
+                    //             ? Colors.white
+                    //             : Colors.black87)),
                     trailing: InkWell(
                       onTap: () {
                         titleAnnouncement.text = data['title'];
@@ -1307,6 +1447,8 @@ class Components {
               }
               final docs = snapshot.data?.docs;
               return ListView.builder(
+                scrollDirection: Axis.vertical,
+                physics: AlwaysScrollableScrollPhysics(),
                 shrinkWrap: true,
                 itemCount: docs!.length,
                 itemBuilder: (context, int index) {
@@ -1401,13 +1543,14 @@ class Components {
                   ),
                 );
               }
-              final docs = snapshot.data?.docs;
+              final docs = snapshot.data!.docs;
               return ListView.separated(
                 separatorBuilder: (context, index) {
                   return spacerHeight(10);
                 },
                 shrinkWrap: true,
-                itemCount: docs!.length,
+               // reverse: true,
+                itemCount: docs.length,
                 itemBuilder: (context, int index) {
                   Map<String, dynamic> data =
                       docs[index].data() as Map<String, dynamic>;
@@ -1416,7 +1559,18 @@ class Components {
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(100),
                       child: InkWell(
-                        onTap: () {},
+                        onTap: () {
+                          titleEvent.text = data['title'];
+                          descriptionEvent.text = data['description'];
+                          urlEvent = data['imageUrl'];
+                          venueEvent.text = data['venue'];
+                          controller.selectTime.value = data['time'];
+                          controller.selectedDate.value = data['date'];
+                          organizersEvent.text = data['organizers'];
+                          linkEvent.text = data['link'];
+                          Components.adminEventBottomSheet(
+                              docs[index].id, urlEvent!, context);
+                        },
                         child: CachedNetworkImage(
                           height: 50,
                           width: 50,
@@ -1440,11 +1594,11 @@ class Components {
                             : Colors.black87,
                       ),
                     ),
-                    subtitle: Text(data['description'],
-                        style: TextStyle(
-                            color: controller.isDark.value
-                                ? Colors.white
-                                : Colors.black87)),
+                    // subtitle: Text(data['description'],
+                    //     style: TextStyle(
+                    //         color: controller.isDark.value
+                    //             ? Colors.white
+                    //             : Colors.black87)),
                     trailing: InkWell(
                       onTap: () {
                         titleEvent.text = data['title'];
@@ -1498,9 +1652,9 @@ class Components {
             notification.body,
             NotificationDetails(
               android: AndroidNotificationDetails(
-                channel.id,
-                channel.name,
-                channelDescription: channel.description,
+                mainchannel.id,
+                mainchannel.name,
+                channelDescription: mainchannel.description,
                 timeoutAfter: 3000,
                 onlyAlertOnce: true,
                 color: Colors.blue,
@@ -1508,6 +1662,42 @@ class Components {
             ));
       }
     });
+  }
+
+  static resourceFlutterNotfications() async {
+    var initializationSettingsAndroid =
+        const AndroidInitializationSettings('@minmap/ic_launcher');
+    var initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+    flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
+
+      if (notification != null && android != null) {
+        flutterLocalNotificationsPlugin.show(
+            notification.hashCode,
+            notification.title,
+            notification.body,
+            NotificationDetails(
+                android: AndroidNotificationDetails(
+                    resourceChannel.id, resourceChannel.name,
+                    channelDescription: resourceChannel.description,
+                    timeoutAfter: 4000,
+                    onlyAlertOnce: true,
+                    color: Colors.deepOrange)));
+}
+    });
+  }
+
+  static createScaffoldMessanger(String text, BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: Duration(seconds: 1),
+        backgroundColor: Colors.green,
+        content: Text(text),
+      ),
+    );
   }
 
   static Widget eventListCard(BuildContext context) {
@@ -1536,16 +1726,57 @@ class Components {
               }
               final docs = snapshot.data?.docs;
 
-              return ListView.builder(
+              return ListView.separated(
+                separatorBuilder: (context, index) => spacerHeight(2),
                 physics: NeverScrollableScrollPhysics(),
-                reverse: false,
+                //reverse: true,
                 dragStartBehavior: DragStartBehavior.start,
-                shrinkWrap: true,
-                itemCount: docs?.length,
+                shrinkWrap: false,
+                itemCount: docs!.length,
                 itemBuilder: (context, int index) {
                   Map<String, dynamic> data =
-                      docs![index].data() as Map<String, dynamic>;
-
+                      docs[index].data() as Map<String, dynamic>;
+                  // print(
+                  //     "The actual time today is : ${DateFormat.yMMMd().parse(now).toString().substring(0, 10)}");
+                  // print(
+                  //     "The date today is : ${DateFormat.yMMMd().parse(data['date']).toString().substring(0, 10)}");
+                  bool isMatching = DateFormat.yMMMd()
+                          .parse(now)
+                          .toString()
+                          .substring(0, 10) ==
+                      DateFormat.yMMMd()
+                          .parse(data['date'])
+                          .toString()
+                          .substring(0, 10);
+                  print("Check is the dates matching : $isMatching");
+                  AwesomeNotifications().createNotification(
+                    content: NotificationContent(
+                      id: 1,
+                      //icon: data['imageUrl'],
+                      //channelKey: channelKey,
+                      title: data['title'],
+                      body: "Looking forward to see you there",
+                      locked: false,
+                      criticalAlert: false,
+                      category: NotificationCategory.Alarm, channelKey: 'base',
+                    ),
+                    schedule: NotificationCalendar.fromDate(
+                      date: (DateFormat.yMMMd().parse(data['date']).toString())
+                                  .substring(0, 10) ==
+                              (DateFormat.yMMMd().parse(now).toString())
+                                  .substring(0, 10)
+                          ? DateTime.now().add(Duration(seconds: 5))
+                          : DateFormat.yMMMd().parse(data['date']),
+                      // ignore: unrelated_type_equality_checks
+                      // date:
+                    ),
+                    actionButtons: <NotificationActionButton>[
+                      NotificationActionButton(
+                          key: 'remove',
+                          label: 'Stop',
+                          buttonType: ActionButtonType.DisabledAction),
+                    ],
+                  );
                   return ListTile(
                     onTap: () async {
                       String url = data['link'];
@@ -1701,6 +1932,7 @@ class Components {
               }
               final docs = snapshot.data?.docs;
               return ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
                 separatorBuilder: (context, index) {
                   return spacerHeight(10);
                 },
@@ -1711,6 +1943,17 @@ class Components {
                       docs[index].data() as Map<String, dynamic>;
 
                   return ListTile(
+                    onTap: () {
+                      titleMeeting.text = data['title'];
+                      descriptionMeeting.text = data['description'];
+                      urlMeeting = data['imageUrl'];
+                      controller.selectTime.value = data['time'];
+                      controller.selectedDate.value = data['date'];
+                      organizersMeeting.text = data['organizers'];
+                      linkMeeting.text = data['link'];
+                      Components.adminMeetingBottomSheet(
+                          docs[index].id, urlMeeting!, context);
+                    },
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(100),
                       child: InkWell(
@@ -1738,11 +1981,11 @@ class Components {
                             : Colors.black87,
                       ),
                     ),
-                    subtitle: Text(data['description'],
-                        style: TextStyle(
-                            color: controller.isDark.value
-                                ? Colors.white
-                                : Colors.black87)),
+                    // subtitle: Text(data['description'],
+                    //     style: TextStyle(
+                    //         color: controller.isDark.value
+                    //             ? Colors.white
+                    //             : Colors.black87)),
                     trailing: InkWell(
                       onTap: () {
                         titleMeeting.text = data['title'];
@@ -1968,6 +2211,88 @@ class Components {
     );
   }
 
+  static sendFeedback(description) {
+    Get.defaultDialog(
+      //titlePadding: EdgeInsets.only(top: 5),
+      contentPadding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+      cancelTextColor: controller.isDark.value ? Colors.white : Colors.black87,
+      confirmTextColor: Colors.white,
+      buttonColor: Colors.deepOrange,
+      backgroundColor:
+          controller.isDark.value ? Colors.grey[900] : Colors.white,
+      title: "Feedback",
+      content: InputField(
+          title: "Please fill your feedback",
+          hint: "Enter feedback",
+          controller: description),
+      titleStyle: GoogleFonts.quicksand(
+        color: controller.isDark.value ? Colors.white : Colors.black87,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      onCancel: (() => Get.back()),
+      onConfirm: () {
+        if (description.text.isEmpty) {
+          showMessage("Enter Description");
+        } else {
+          Get.back();
+          ActionFirebase.createFeedback(FeedBackModel(
+            description: description.text,
+          ));
+          flutterLocalNotificationsPlugin.show(
+              0,
+              "Feedback Sent",
+              "${description.text}",
+              NotificationDetails(
+                  android: AndroidNotificationDetails(
+                mainchannel.id,
+                mainchannel.name,
+                channelDescription: mainchannel.description,
+                importance: Importance.low,
+                color: Colors.blue,
+                playSound: true,
+              )));
+        }
+      },
+    );
+  }
+
+  static sendNotification() {
+    Get.defaultDialog(
+      //titlePadding: EdgeInsets.only(top: 5),
+      contentPadding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+      cancelTextColor: controller.isDark.value ? Colors.white : Colors.black87,
+      confirmTextColor: Colors.white,
+      buttonColor: Colors.deepOrange,
+      backgroundColor:
+          controller.isDark.value ? Colors.grey[900] : Colors.white,
+      title: "Notification",
+      content: InputField(
+          //title: "Enter Notification to send",
+          hint: "Enter Notification",
+          maxLength: 200,
+          linesCount: 5,
+          controller: description),
+      titleStyle: GoogleFonts.quicksand(
+        color: controller.isDark.value ? Colors.white : Colors.black87,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      onCancel: (() => Get.back()),
+      onConfirm: () async {
+        if (description.text.isEmpty) {
+          showMessage("Enter Description");
+        } else {
+          Get.back();
+          await FirebaseNotification.sendFirebaseNotification(
+            purpose: "reminder",
+            title: description.text,
+          );
+        }
+      },
+    );
+  }
+
   static confirmAdmin(password) {
     Get.defaultDialog(
       //titlePadding: EdgeInsets.only(top: 5),
@@ -2056,11 +2381,99 @@ class Components {
               }, context)),
               Expanded(
                   child: button("Delete", () async {
+                Get.back();
                 ActionFirebase.deleteDoc(id, 'events');
                 await FirebaseStorage.instance.refFromURL(url).delete();
-                Get.back();
               }, context))
             ],
+          )),
+      //barrierColor: Colors.red[50],
+      isDismissible: true,
+    );
+  }
+
+  static resourceSheet(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    Get.bottomSheet(
+      elevation: 0,
+
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15), topRight: Radius.circular(15))),
+      Container(
+          height: size.height * 0.45,
+          color: controller.isDark.value ? Colors.grey[900] : Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  InputField(
+                    showRequired: true,
+                    title: "Title",
+                    hint: "Enter the title of the resource?",
+                    controller: title,
+                  ),
+                  InputField(
+                    showRequired: true,
+                    title: "Link",
+                    hint: "Enter the link of the resource",
+                    controller: link,
+                  ),
+                  InputField(
+                    showRequired: true,
+                    title: "Description",
+                    hint: "Enter the description of the resource?",
+                    controller: description,
+                    maxLength: 80,
+                    linesCount: 3,
+                  ),
+                  Components.spacerHeight(10),
+                  Row(
+                    children: [
+                      Components.header_3(
+                          "Select Image",
+                          controller.isDark.value
+                              ? Colors.white
+                              : Colors.black87),
+                      Expanded(child: Container()),
+                      InkWell(
+                        onTap: () async {
+                          await controller.getImage();
+                          await Components.uploadFile(image!);
+                        },
+                        child: Icon(
+                          Icons.add_a_photo_outlined,
+                          color: controller.isDark.value
+                              ? Colors.white
+                              : Colors.black87,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Components.spacerHeight(10),
+                  Components.button("Submit", () {
+                    FocusScope.of(context).requestFocus(FocusNode());
+                    ActionFirebase.createResource(ResourceModel(
+                      title.text,
+                      description.text,
+                      url,
+                      link.text,
+                    ));
+                    Get.back();
+                    Components.createScaffoldMessanger(
+                        "Data sent successfully", context);
+                    controller.isResourceEnabled.value
+                        ? FirebaseNotification.sendFirebaseNotification(
+                            purpose: "Resource",
+                            title: title.text,
+                          )
+                        : null;
+                  }, context)
+                ],
+              ),
+            ),
           )),
       //barrierColor: Colors.red[50],
       isDismissible: true,
@@ -2118,7 +2531,38 @@ class Components {
               }, context)),
               Expanded(
                   child: button("Delete", () async {
+                Get.back();
                 ActionFirebase.deleteDoc(id, 'leads');
+                await FirebaseStorage.instance.refFromURL(url).delete();
+              }, context))
+            ],
+          )),
+      //barrierColor: Colors.red[50],
+      isDismissible: true,
+    );
+  }
+    static adminNewsBottomSheet(
+      String id, String url, BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    Get.bottomSheet(
+      elevation: 0,
+
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15), topRight: Radius.circular(15))),
+      Container(
+          height: size.height * 0.13,
+          color: controller.isDark.value ? Colors.grey[900] : Colors.white,
+          child: Row(
+            children: [
+              Expanded(
+                  child: button("Edit", () async {
+                Get.back();
+                await editAnnouncement(id, context);
+              }, context)),
+              Expanded(
+                  child: button("Delete", () async {
+                ActionFirebase.deleteDoc(id, 'news');
                 await FirebaseStorage.instance.refFromURL(url).delete();
                 Get.back();
               }, context))
@@ -2196,7 +2640,7 @@ class Components {
               InkWell(
                 onTap: () async {
                   FocusScope.of(context).requestFocus(FocusNode());
-                  await imageDialog(context);
+                  await controller.getImage();
                   await Components.uploadFileLead(controller.image.value);
                 },
                 child: Icon(
@@ -2378,7 +2822,7 @@ class Components {
               InkWell(
                 onTap: () async {
                   FocusScope.of(context).requestFocus(FocusNode());
-                  await imageDialog(context);
+                  await controller.getImage();
                   await Components.uploadFileAnnouncement(
                       controller.image.value);
                 },
@@ -2411,6 +2855,109 @@ class Components {
           Components.showMessage("Failed to update");
         });
         Get.back();
+      },
+    );
+  }
+
+  static sendResources(BuildContext context) {
+    Get.defaultDialog(
+      //titlePadding: EdgeInsets.only(top: 5),
+      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      cancelTextColor: controller.isDark.value ? Colors.white : Colors.black87,
+      confirmTextColor: Colors.white,
+      buttonColor: Colors.deepOrange,
+      backgroundColor:
+          controller.isDark.value ? Colors.grey[900] : Colors.white,
+      title: "Send a  resource",
+      content: Column(
+        children: [
+          InputField(
+            showRequired: true,
+            title: "Title",
+            hint: "Enter the title of the resource?",
+            controller: titleResource,
+          ),
+          InputField(
+            showRequired: true,
+            title: "Link",
+            hint: "Enter the link of the resource",
+            controller: linkResource,
+          ),
+          InputField(
+            showRequired: true,
+            title: "Description",
+            hint: "Enter the description of the resource?",
+            controller: descriptionResource,
+            //maxLength: 80,
+            linesCount: 3,
+          ),
+          spacerHeight(16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Select image",
+                  style: GoogleFonts.quicksand(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        controller.isDark.value ? Colors.white : Colors.black87,
+                  )),
+              spacerWidth(18),
+              Container(
+                height: 25,
+                width: 25,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(
+                    color: Colors.deepOrange,
+                    width: 1,
+                  ),
+                ),
+                child: InkWell(
+                  onTap: () async {
+                    FocusScope.of(context).requestFocus(FocusNode());
+                    await controller.getImage();
+                    await Components.uploadFileResource(controller.image.value);
+                  },
+                  child: Icon(
+                    Icons.add_a_photo_rounded,
+                    color:
+                        controller.isDark.value ? Colors.white : Colors.black87,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      titleStyle: GoogleFonts.quicksand(
+        color: controller.isDark.value ? Colors.white : Colors.black87,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      //onCancel: (() => Get.back()),
+      onConfirm: () async {
+        Get.back();
+        FocusScope.of(context).requestFocus(FocusNode());
+        ActionFirebase.createResource(ResourceModel(
+          titleResource.text,
+          descriptionResource.text,
+          urlResource,
+          linkResource.text,
+        ));
+
+        Components.createScaffoldMessanger("Data sent successfully", context);
+        titleResource.clear();
+        descriptionResource.clear();
+        linkResource.clear();
+        
+        // controller.isResourceEnabled.value
+        //     ? FirebaseNotification.sendFirebaseNotification(
+        //         purpose: "Resource",
+        //         title: title.text,
+        //       )
+        //     : null;
       },
     );
   }
@@ -2455,7 +3002,7 @@ class Components {
               InkWell(
                 onTap: () async {
                   FocusScope.of(context).requestFocus(FocusNode());
-                  await imageDialog(context);
+                  await controller.getImage();
                   await Components.uploadFileResource(controller.image.value);
                 },
                 child: Icon(
@@ -2538,7 +3085,7 @@ class Components {
                       InkWell(
                         onTap: () async {
                           FocusScope.of(context).requestFocus(FocusNode());
-                          await imageDialog(context);
+                          await controller.getImage();
                           await Components.uploadFileMeeting(
                               controller.image.value);
                         },
@@ -2654,7 +3201,7 @@ class Components {
                       InkWell(
                         onTap: () async {
                           FocusScope.of(context).requestFocus(FocusNode());
-                          await imageDialog(context);
+                          await controller.getImage();
                           await Components.uploadFileEvent(
                               controller.image.value);
                         },
@@ -2793,73 +3340,8 @@ class Components {
     );
   }
 
-  static Future<String?> imageDialog(BuildContext context) async {
-    final size = MediaQuery.of(context).size;
-    return showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => Container(
-        width: size.width * 0.4,
-        height: size.height * 0.16,
-        decoration: BoxDecoration(
-          border: Border.all(
-              color: const Color.fromARGB(255, 14, 14, 20), width: 1),
-          //border: Border.all(color: Color.fromARGB(255, 182, 36, 116),width:1 ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          contentPadding: const EdgeInsets.all(5),
-          title: const Text('choose image from: '),
-          content: SingleChildScrollView(
-            child: ListBody(children: [
-              imageTile(
-                  ImageSource.camera, 'Camera', Icons.camera_alt, context),
-              imageTile(
-                  ImageSource.gallery, "Gallery", Icons.photo_library, context),
-              ListTile(
-                selectedColor: Colors.grey,
-                onTap: () {
-                  Navigator.of(context).pop();
-                },
-                leading: const Icon(Icons.cancel, color: Colors.black87),
-                title: Text("Cancel",
-                    style: GoogleFonts.quicksand(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    )),
-              ),
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
 
-  static Widget imageTile(
-      ImageSource source, String text, IconData icon, BuildContext context) {
-    return ListTile(
-      selectedColor: Colors.grey,
-      onTap: () async {
-        await controller.getImage(source);
-        Get.back();
 
-        controller.update();
-      },
-      leading: Icon(icon, color: const Color.fromARGB(255, 0, 0, 0)),
-      title: GestureDetector(
-        onTap: () async {
-          await controller.getImage(source);
-          Get.back();
-        },
-        child: Text(text,
-            style: GoogleFonts.quicksand(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            )),
-      ),
-    );
-  }
 
   static Widget eventListSlider(BuildContext context) {
     final Stream<QuerySnapshot> detailStream =
@@ -3746,5 +4228,74 @@ class InputPasswordField extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class CustomButton extends StatelessWidget {
+  final Function() onPressed;
+  final String buttonText;
+  final bool? transparent;
+  final EdgeInsets? margin;
+  final double? height;
+  final double? width;
+  final double? fontSize;
+  final double? radius;
+  final IconData? icon;
+  CustomButton(
+      {required this.onPressed,
+      required this.buttonText,
+      this.transparent = false,
+      this.margin,
+      this.width,
+      this.height,
+      this.fontSize,
+      this.radius = 5,
+      this.icon});
+  final controller = Get.put(AppController());
+
+  @override
+  Widget build(BuildContext context) {
+    final ButtonStyle flatButtonStyle = TextButton.styleFrom(
+      backgroundColor: controller.isDark.value ? Colors.white : Colors.black87,
+      minimumSize: Size(width ?? 80, height ?? 50),
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(radius ?? 5),
+      ),
+    );
+
+    return Center(
+        child: SizedBox(
+            width: 10,
+            child: Padding(
+              padding: margin ?? EdgeInsets.all(0),
+              child: TextButton(
+                onPressed: onPressed,
+                style: flatButtonStyle,
+                child:
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  icon != null
+                      ? Padding(
+                          padding: EdgeInsets.only(
+                              right: Dimensions.PADDING_SIZE_EXTRA_SMALL),
+                          child: Icon(
+                            icon,
+                            color: controller.isDark.value
+                                ? Colors.white
+                                : Colors.black87,
+                          ),
+                        )
+                      : SizedBox(),
+                  Text(buttonText,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.quicksand(
+                          fontSize: fontSize ?? 16,
+                          fontWeight: FontWeight.w600,
+                          color: controller.isDark.value
+                              ? Colors.black87
+                              : Colors.white)),
+                ]),
+              ),
+            )));
   }
 }

@@ -54,7 +54,6 @@ class _FeedBackState extends State<FeedBack> {
                   ),
                   Components.button("Send Feedback", () {
                     ActionFirebase.createFeedback(FeedBackModel(
-                      title: title.text,
                       description: description.text,
                     ));
                     flutterLocalNotificationsPlugin.show(
@@ -63,10 +62,10 @@ class _FeedBackState extends State<FeedBack> {
                         "Your feedback is highly appreciatedd",
                         NotificationDetails(
                             android: AndroidNotificationDetails(
-                          channel.id,
-                          channel.name,
-                          channelDescription: channel.description,
-                          importance: Importance.high,
+                          mainchannel.id,
+                          mainchannel.name,
+                          channelDescription: mainchannel.description,
+                          importance: Importance.low,
                           color: Colors.blue,
                           playSound: true,
                         )));

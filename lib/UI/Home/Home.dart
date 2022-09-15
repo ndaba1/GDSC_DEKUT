@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:gdsc_app/Controller/app_controller.dart';
+import 'package:gdsc_app/InternetConnection/chechConnection.dart';
+import 'package:gdsc_app/InternetConnection/noInternetConnection.dart';
+import 'package:gdsc_app/UI/Announcement/UI/AnnHome.dart';
 import 'package:gdsc_app/UI/Announcement/UI/announcement.dart';
 import 'package:gdsc_app/UI/Meetings/UI/meetings.dart';
 import 'package:gdsc_app/UI/Profile/profile.dart';
@@ -41,6 +44,8 @@ class _HomeState extends State<Home> {
     controller.getProfileDetails();
     controller.getThemeStatus();
     Components.flutterNotificationSettings();
+   // controller.sendSpecific();
+
   }
 
   @override
@@ -51,6 +56,7 @@ class _HomeState extends State<Home> {
     String? token = await FirebaseMessaging.instance.getToken();
     print("Token of the app is :$token");
     getToken();
+
   }
 
   @override
@@ -75,7 +81,7 @@ class _HomeState extends State<Home> {
       "Events",
       "Resources",
       "News",
-      "Meeting",
+      "Virtual",
       "Profile",
     ];
     return AnimatedBottomNavigationBar.builder(
@@ -132,7 +138,7 @@ class _HomeState extends State<Home> {
     List<Widget> pages = [
       const Events(),
       const Resources(),
-      const Announcements(),
+      const AnnHome(),
       const Meeting(),
       const Account(),
     ];

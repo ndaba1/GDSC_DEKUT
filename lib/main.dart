@@ -1,10 +1,13 @@
 // ignore_for_file: non_constant_identifier_names, unused_element, avoid_print
 
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:gdsc_app/InternetConnection/chechConnection.dart';
+import 'package:gdsc_app/InternetConnection/noInternetConnection.dart';
 import 'package:gdsc_app/UI/Authentication/Login/login_page.dart';
 import 'package:get/get.dart';
 import 'package:flutter/services.dart';
@@ -17,27 +20,31 @@ String userID = '';
 User? the_User;
 String userName = '';
 String userEmail = '';
-  String? token;
-  getToken() async {
-    token = (await FirebaseMessaging.instance.getToken())!;
-  }
+String? token;
+getToken() async {
+  token = (await FirebaseMessaging.instance.getToken())!;
+}
+
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Handling a background message ${message.messageId}');
 }
 
+final controller = Get.put(AppController());
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
 
   await FirebaseMessaging.instance.subscribeToTopic("Name");
-
+  ConnectionStatusSingleton connectionStatus =
+      ConnectionStatusSingleton.getInstance();
+  connectionStatus.initialize();
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
+      ?.createNotificationChannel(mainchannel);
 
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: true,
@@ -51,16 +58,58 @@ void main() async {
 
   Get.lazyPut<AppController>(() => AppController(), fenix: true);
 
+  AwesomeNotifications().initialize(
+      // set the icon to null if you want to use the default app icon
+      null,
+      [
+        NotificationChannel(
+            channelGroupKey: 'basic_channel_group',
+            channelKey: 'base',
+            channelName: 'Basic notifications',
+            channelDescription: 'Notification channel for basic tests',
+            defaultColor: const Color(0xFF9D50DD),
+            ledColor: Colors.white)
+      ],
+      // Channel groups are only visual and are not required
+      channelGroups: [
+        NotificationChannelGroup(
+            channelGroupkey: 'basic_channel_group',
+            channelGroupName: 'Basic group')
+      ],
+      debug: true);
+  await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
+    if (!isAllowed) {
+      AwesomeNotifications().requestPermissionToSendNotifications();
+    }
+  });
+  AwesomeNotifications()
+      .actionStream
+      .listen((ReceivedNotification receivedNotification) {
+    Navigator.of(Get.context!).pushNamed('/NotificationPage', arguments: {
+      // your page params. I recommend you to pass the
+      // entire *receivedNotification* object
+      //id: receivedNotification.id,
+    });
+  });
+
   runApp(MyApp());
 }
 
-const AndroidNotificationChannel channel = AndroidNotificationChannel(
+const AndroidNotificationChannel mainchannel = AndroidNotificationChannel(
   'high_importance_channel', // id
   'High Importance Notifications', // title
   description:
       'this channel is used for important notifications.', // description
   importance: Importance.high,
 );
+
+const AndroidNotificationChannel resourceChannel = AndroidNotificationChannel(
+  'resource_channel',
+  'resource channel Notifications',
+  description: 'this channel is used for resource notifications',
+  importance: Importance.min,
+);
+
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
@@ -77,7 +126,7 @@ class MyApp extends StatelessWidget {
       builder: (context, snapshot) {
         // Check for errors
         if (snapshot.hasError) {
-          return Container();
+          return const NoInternetScreen();
         }
 
         // Once complete, show your application
@@ -86,6 +135,15 @@ class MyApp extends StatelessWidget {
 
           if (user != null) {
             return GetMaterialApp(
+              onUnknownRoute: (RouteSettings settings) {
+                return MaterialPageRoute(
+                    builder: (context) => Scaffold(
+                          body: Center(
+                            child:
+                                Text('No route defined for ${settings.name}'),
+                          ),
+                        ));
+              },
               debugShowCheckedModeBanner: false,
               theme: ThemeData(
                 primarySwatch: Colors.blue,

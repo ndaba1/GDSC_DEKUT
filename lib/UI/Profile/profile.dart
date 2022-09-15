@@ -2,20 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:gdsc_app/Controller/app_controller.dart';
 import 'package:gdsc_app/UI/Authentication/Login/login_page.dart';
 import 'package:gdsc_app/UI/Authentication/user_logic.dart';
-import 'package:gdsc_app/UI/Notification/pushNotification.dart';
 import 'package:gdsc_app/UI/Profile/Pages/Detail/personDetails.dart';
 import 'package:gdsc_app/UI/Profile/Pages/FeedBack/UI/feedback.dart';
 import 'package:gdsc_app/UI/Profile/Pages/Help/help.dart';
 import 'package:gdsc_app/UI/Profile/Pages/Leads/UI/leads.dart';
-import 'package:gdsc_app/UI/Profile/Pages/Notifications/gdscNotifications.dart';
-import 'package:gdsc_app/UI/Profile/Pages/Post/Post.dart';
 import 'package:gdsc_app/Util/App_Constants.dart';
 import 'package:gdsc_app/Util/dimensions.dart';
-import 'package:gdsc_app/main.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../../Util/App_components.dart';
 
 class Account extends StatefulWidget {
@@ -75,17 +68,17 @@ class _AccountState extends State<Account> {
                           () => Get.to(() => const Leads(),
                               duration: const Duration(milliseconds: 100))),
                       Components.showDividerLine(Dimensions.PADDING_SIZE_SMALL),
-                      Components.cardButton(Icons.info_outline_rounded,
-                          "App Version 1.0.0", () => null),
-                      Components.showDividerLine(Dimensions.PADDING_SIZE_SMALL),
+                      // Components.cardButton(Icons.info_outline_rounded,
+                      //     "Send a Notification", () => null),
+                      //Components.showDividerLine(Dimensions.PADDING_SIZE_SMALL),
                       Components.cardButton(
                           Icons.help_outline_sharp,
                           Constants.help,
                           () => Get.to(() => Contact(),
                               duration: const Duration(milliseconds: 1))),
                       Components.showDividerLine(Dimensions.PADDING_SIZE_SMALL),
-                      Components.cardButton(Icons.feedback, "Share Feedback",
-                          () => Get.to(() => const FeedBack())),
+                      Components.cardButton(Icons.feedback, "Feedback",
+                          () => Components.sendFeedback(description)),
                       Components.showDividerLine(Dimensions.PADDING_SIZE_SMALL),
                       Components.showLogOutButton(Constants.logout, () async {
                         await Authentication.signOut();
